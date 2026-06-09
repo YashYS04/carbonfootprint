@@ -1,198 +1,170 @@
-# 🌱 Carbon Footprint Awareness Platform
+# 🌍 Carbon Footprint Awareness Hub
 
-> **Virtual PromptWars — Challenge 3.** A web app that helps individuals
-> **understand, track, and reduce** their personal carbon footprint through
-> simple inputs and **personalized, AI-generated insights**.
-
-Built as a single, accessible web application: a **Node.js / Express** backend and
-a **Vanilla JS + Semantic HTML / CSS** frontend, using **Google Gemini (Vertex AI / Developer API)** for
-personalized advice and local in-memory storage for tracking, deployed to **Google Cloud
-Run** as a single container.
-
-## 🔗 Live demo
-
-**<https://carbon-platform-2208346538.us-central1.run.app>**
-
-> Running on Cloud Run with live Gemini insights in project `carbonfoot-498906` (`us-central1`).
+An interactive, accessible web application designed to help individuals **understand, track, and optimize** their personal carbon footprint. The platform processes user lifestyle activity inputs (transportation, meals, and home energy) to calculate carbon equivalents and provides personalized, context-aware reduction advice using Google Gemini.
 
 ---
 
-## 1. Chosen vertical
+## 🔗 Live Application Link
+* **Production URL**: <https://carbon-platform-2208346538.us-central1.run.app>
+* **Environment**: Hosted on Google Cloud Run in project `carbonfoot-498906` (`us-central1`).
 
-**Carbon Footprint Awareness Platform** — a tool for everyday urban commuters who want to know where their emissions come from and what to actually *do* about them. The product is organized around the three verbs in the brief:
+---
 
-| Pillar | In the product |
+## 💡 Core Product Pillars
+
+Our platform targets individual lifestyle choices rather than corporate audits, focusing on three actionable phases:
+
+1. **Footprint Calculator (Understand)**: Users enter factual inputs about their daily transport, diet, or electricity and gas consumption. The app instantly translates this data into annual kilograms of CO₂ equivalent (kg CO₂e).
+2. **Dynamic History Log (Track)**: The calculated items are logged to a premium, accessible data grid that displays the breakdown of activities in real-time, allowing individuals to review historical trends.
+3. **AI Advising Assistant (Reduce)**: Users engage with an interactive chatbot powered by Google Gemini, which reads their aggregated footprint summary and targets their primary emission categories with specific, quantified steps for improvement.
+
+| Function | Implementation in Platform |
 | --- | --- |
-| **Understand** | Enter transportation mode, meal type, or energy usage facts → get your footprint calculated instantly using standardized coefficients. |
-| **Track** | Save logged entries to a highly visible, accessible Activity Log details table that updates in real-time. |
-| **Reduce** | Receive personalized, *quantified* advice from a Gemini-powered chatbot that analyzes your logs and targets your highest emission source. |
+| **Understand** | Carbon math utility translates modes/quantities to annual kg CO₂e. |
+| **Track** | Stateful recent activities table logs user calculations. |
+| **Reduce** | Prompt-engineered Gemini advisor recommends personalized action plans. |
 
 ---
 
-## 2. Approach & logic
+## 🏗️ Architecture & Execution Flow
 
-### The decision flow (smart, context-driven assistant)
+### System Execution Flow
+The diagram below outlines how user actions flow through our system:
 
 ```text
-User inputs (transport, meal, energy)
-         │
-         ▼
-Input Validation & Sanitization (Prototype Pollution Safe)
-         │
-         ▼
-Carbon engine  ──►  per-category kg CO₂e  ──►  Summary stats
-         │                                         │
-         ▼                                         ▼
-Recent Activity Log                           Insights chatbot
-                                                ├─ Gemini: tailored advice incorporating user's summary
-                                                └─ Rule fallback: deterministic advice targeting largest category
+User Actions (Log activity or Chat prompt)
+             │
+             ▼
+Express Server Validation & XSS/Prototype Pollution Sanitizers
+             │
+             ▼
+    ┌────────┴────────────────────────┐
+    ▼                                 ▼
+Carbon Calc Engine             AI Chatbot Engine
+  • Pure functions in JS         • Context-aware prompting
+  • Standard coefficients        • Gemini 2.5 Flash API Call
+  • Updates local history        • Robust local rules fallback
 ```
 
-The "logical decision making based on user context" the brief asks for shows up in two places:
+### Context-Aware Decision Logic
+* **Tailored Suggestions**: The chatbot retrieves the user's logged activity logs and total emissions. It structures the system prompt to guide Gemini to focus on the user's highest emission category first, assuring highly tailored micro-goals.
+* **Resilient Graceful Fallback**: If the Gemini API key is missing or encounters a rate-limit error, the assistant falls back to a deterministic rule-based engine. This fallback identifies the user's largest carbon emitter category and outputs pre-formulated, actionable footprint reduction tips.
 
-1. **Context-Aware Chatbot Guidance**: The AI chatbot dynamically retrieves the user's current aggregated carbon footprint breakdown. When prompting Gemini, it injects these specific statistics to generate reduction plans tailored directly to the user's highest emissions category.
-2. **Graceful AI degradation**: Gemini produces the richest, most personal advice. However, if the API key is unconfigured or a connection error occurs, the chatbot *transparently falls back* to a rule-based engine. This deterministic helper determines the user's largest carbon emitter category and outputs quantified tips so the user is never left without guidance.
-
-### Emission model
-
-Footprint calculations utilize published public emission coefficients documented inline in [`src/utils/calculations.js`](src/utils/calculations.js):
-- **Transportation**:
-  - `petrol_car`: 0.18 kg CO₂e per km
-  - `diesel_car`: 0.17 kg CO₂e per km
-  - `electric_car`: 0.05 kg CO₂e per km
-  - `bus`: 0.089 kg CO₂e per km
-  - `train`: 0.035 kg CO₂e per km
-- **Diet / Meals**:
-  - `vegan`: 0.5 kg CO₂e per meal
-  - `vegetarian`: 0.8 kg CO₂e per meal
-  - `meat_heavy`: 2.5 kg CO₂e per meal
-- **Home Energy Utilities**:
-  - `electricity`: 0.35 kg CO₂e per kWh
-  - `gas`: 0.20 kg CO₂e per kWh
-
-Every coefficient is accompanied by comments documenting its real-world environmental source mapping.
+### Carbon Calculations & Emission Factors
+Calculations are based on standard public emission factors (documented in `src/utils/calculations.js`):
+* **Transportation**: `petrol_car` (0.18 kg CO₂e/km), `diesel_car` (0.17 kg CO₂e/km), `electric_car` (0.05 kg CO₂e/km), `bus` (0.089 kg CO₂e/km), `train` (0.035 kg CO₂e/km).
+* **Diet & Eating**: `vegan` (0.5 kg CO₂e/meal), `vegetarian` (0.8 kg CO₂e/meal), `meat_heavy` (2.5 kg CO₂e/meal).
+* **Home Energy Utilities**: `electricity` (0.35 kg CO₂e/kWh), `gas` (0.20 kg CO₂e/kWh).
 
 ---
 
-## 3. How the solution works
+## 🛠️ Project Design & Technical Layout
 
-### Architecture
+### Project Directory Layout
+Our codebase follows a clean, modular structure:
+* `public/` — Frontend SPA assets (semantic HTML interface, premium HSL styling, and JS DOM handlers).
+* `src/config/` — Configuration files, including our Vertex AI/Gemini Gen AI client initialization.
+* `src/controllers/` — Controller functions handling carbon calculator inputs and chatbot APIs.
+* `src/middleware/` — Security utilities, rate-limiting, and request validators.
+* `src/routes/` — Express route mappings for calculator, logging, and chat endpoints.
+* `src/utils/` — Utility files (carbon math, caching layer, and test-aware logging wrapper).
+* `tests/` — Automated test files (API routing, security sanitization, and mathematical checks).
 
-```text
-Browser (Vanilla JS + CSS)              Cloud Run (single container)
-  • accessible UI + Activity Log         Express.js / Node.js
-  • dynamic charts / statistics ──HTTP──► ├─ POST   /api/carbon/activities  log activity
-                                          ├─ GET    /api/carbon/summary     aggregated metrics
-                                          ├─ DELETE /api/carbon/activities  clear statistics
-                                          ├─ POST   /api/ai/chat            Gemini chatbot endpoint
-                                          └─ GET    /                       serves frontend files
-                                              │
-                                              └─► Google Gemini API (via @google/genai SDK)
-```
-
-A single container serves both the Node.js REST API routes and the static SPA assets (`index.html`, `index.css`, `app.js`), eliminating cross-origin (CORS) complexity in production.
-
-### Project layout
-
-```text
-public/       Frontend assets (HTML UI, premium styling, interactive JS logic)
-src/
-  ├── config/       Gemini API initialization client using @google/genai
-  ├── controllers/  Express controllers handling carbon arithmetic and AI chat responses
-  ├── middleware/   CORS, rate-limiting, and payload schema validation
-  ├── routes/       Routing endpoints mapping URLs to respective controllers
-  └── utils/        Shared helpers (calculation factors, cache, test-aware logger)
-tests/        Jest unit & integration test suites
-Dockerfile    Multi-stage build definition for Docker / Cloud Run container
-```
-
-### Key endpoints
-
-| Method & path | Purpose |
-| --- | --- |
-| `POST /api/carbon/activities` | Log a transportation, meal, or energy activity to update the footprint |
-| `GET /api/carbon/summary` | Fetch all historical activities list and current category breakdowns |
-| `DELETE /api/carbon/activities` | Reset the user activity history (POST `/api/carbon/clear` is also supported) |
-| `POST /api/ai/chat` | Send a chat message to the Gemini chatbot for personalized suggestions |
+### REST API Contracts
+* `POST /api/carbon/activities`: Receives activity logs, validates details, computes emissions, and records the entry.
+* `GET /api/carbon/summary`: Fetches the history of logged entries alongside category breakdowns.
+* `DELETE /api/carbon/activities` / `POST /api/carbon/clear`: Wipes the activity log.
+* `POST /api/ai/chat`: Relays user prompts to the Gemini chatbot, returning context-specific replies.
 
 ---
 
-## 4. Running locally
+## 💻 Local Development Setup
 
-**Prerequisites**: Node.js 20+
+### Running the App
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+2. Set up environment variables (optional: add your `GEMINI_API_KEY` to enable live Gemini responses):
+   ```bash
+   cp .env.example .env
+   ```
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
+   *The platform will start listening on `http://localhost:8080`.*
 
-```bash
-# Install dependencies
-npm install
-
-# Run the Express server and serve the frontend locally
-npm run dev
-# Server will listen on http://localhost:8080
-```
-
-**Running as a Docker container:**
-
+### Container Build & Run
+To compile and test the container image locally with Docker:
 ```bash
 docker build -t carbon-platform .
 docker run -p 8080:8080 -e GEMINI_API_KEY="your-api-key" carbon-platform
-# open http://localhost:8080
 ```
 
 ---
 
-## 5. Testing
+## 🧪 Testing and Quality Control
 
-We have built a comprehensive Jest test suite covering calculation math, sanitizers, cache, controllers, and routing error handlers:
+We implement automated Jest testing for validation, mathematical accuracy, security constraints, and API routing logic.
 
-| Suite | Command | Covers |
-| --- | --- | --- |
-| Unit & Integration Tests | `npm test` | Verifies endpoints, calculations, cache, and error boundaries |
-| Code Coverage | `npm test -- --coverage` | Measures statement and branch execution coverage (>97%) |
+* **Run all tests**:
+  ```bash
+  npm test
+  ```
+* **Run coverage metrics**:
+  ```bash
+  npm test -- --coverage
+  ```
 
-All tests mock external services (such as the Gemini API) to run quickly, deterministically, and fully offline.
+Our test suite achieves **>97% overall code coverage** (including statements, functions, paths, and lines) with all tests mocking external APIs for reliable, local-only validation.
 
 ---
 
-## 6. Deploying to Google Cloud Run
+## 🚀 Deployment to Google Cloud Run
+
+To build and deploy the container image directly to Google Cloud Run:
 
 ```bash
+# Configure the GCP Project ID
 gcloud config set project carbonfoot-498906
+
+# Enable required Google APIs
 gcloud services enable run.googleapis.com aiplatform.googleapis.com \
     cloudbuild.googleapis.com artifactregistry.googleapis.com
 
-# Build and deploy straight from source:
+# Deploy the container straight from the source files
 gcloud run deploy carbon-platform \
-    --source . --region us-central1 --allow-unauthenticated \
+    --source . \
+    --region us-central1 \
+    --allow-unauthenticated \
     --set-env-vars NODE_ENV=production,PORT=8080
 ```
 
-> **Live deployment:** <https://carbon-platform-2208346538.us-central1.run.app>
+---
+
+## 🔐 Design Decisions & Assumptions
+
+* **Educational Metrics**: The emission coefficients represent standard averages. They are intended for educational and lifestyle awareness, not official greenhouse gas protocol audits.
+* **Local In-Memory Session**: Active records and chat caches are held in memory for simplicity. In a multi-instance production context, they would connect to a persistent store like Firestore.
+* **Fail-Safe Advisor**: The system guarantees a response even if the Google Gemini API limits are hit or credentials are not configured, returning local rule suggestions based on the user's primary emission sources.
+* **Contrast Compliance**: Interface elements are structured with highly readable HSL color combinations adhering to WCAG 2.1 AA specifications.
 
 ---
 
-## 7. Assumptions made
+## 📋 Evaluation Rubric Mapping
 
-- **Educational Estimates**: Calculations are simplified to support educational awareness. The carbon coefficients represent generic regional factors and are not intended for strict corporate audits.
-- **Stateless In-Memory Storage**: Activity logging and cached chat sessions are stored in memory for demo purposes. In a persistent production context, these would connect to a DB (e.g. Firestore) keyed by session or device IDs.
-- **Fail-Safe Robustness**: If the Google Gemini endpoint experiences errors or keys are invalid, the custom rule engine acts as a backup so the user always receives advice.
-- **Accessibility Contrast**: The custom interface theme utilizes high-contrast HSL values meeting WCAG 2.1 AA specifications to remain readable for all users.
-
----
-
-## 8. How this maps to the evaluation rubric
-
-| Axis | Where to look |
+| Rubric Axis | System Location & Implementation Details |
 | --- | --- |
-| **Code Quality** | Modularized routing structure, JSDoc annotated methods, explicit schema validations, pure calculation formulas. |
-| **Security** | Helmet HTTP headers, express-rate-limit protection, recursive sanitizer preventing Prototype Pollution and XSS. |
-| **Efficiency** | Cached chatbot conversation context, simple lightweight in-memory footprint math, stateless routing. |
-| **Testing** | 55 passing Jest tests achieving >97% overall coverage across all statements/lines. |
-| **Accessibility** | Semantic elements, keyboard nav, high contrast palette, screen-reader friendly tables and `aria-live` regions. |
-| **Google Services** | Containerized Google Cloud Run hosting, Google Gemini API integration using the `@google/genai` SDK. |
-| **Problem Statement Alignment** | Complete flow to Understand (activities logging), Track (Activity Log panel), and Reduce (AI chat advice). |
+| **Code Quality** | Modularized routing layer, robust JSDoc comments, strict type validation, and pure calculation formulas. |
+| **Security** | Pinned dependencies, Helmet headers, express-rate-limiting, and recursive Prototype Pollution/XSS sanitization middleware. |
+| **Efficiency** | Lightweight, high-performance in-memory logic, stateless route handling, and zero React build overhead. |
+| **Testing** | 55 passing Jest integration and unit tests covering >97% of the entire backend logic. |
+| **Accessibility** | ARIA announcement regions, high contrast layout, semantic landmark tags, and support for keyboard-only navigation. |
+| **Google Services** | Deployed on Google Cloud Run with Vertex AI/Gemini SDK integrations. |
+| **Pillar Alignment** | Full user flow aligning to the Understand (Calculator), Track (Activity Log), and Reduce (AI Adviser) loop. |
 
 ---
 
 ## License
-
-Created for the Virtual PromptWars Challenge 3. See repository for details.
+Created for the Virtual PromptWars Challenge 3. All rights reserved.
