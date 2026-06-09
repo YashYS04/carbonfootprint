@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoSphere | Carbon Footprint Awareness Platform</title>
+  <meta name="description" content="Track daily activities and get personalized AI-driven strategies powered by Gemini 2.5 Flash to reduce your carbon footprint.">
+  <!-- Premium Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <!-- Main Header -->
+  <header class="app-header" role="banner">
+    <div class="header-container">
+      <div class="logo-area">
+        <span class="logo-icon" aria-hidden="true">🌍</span>
+        <h1 class="logo-text">EcoSphere</h1>
+      </div>
+      <p class="tagline">Carbon Footprint Awareness Platform</p>
+      <div class="header-badge" aria-live="polite" id="user-badge">Persona: Eco-Curious Urban Commuter</div>
+    </div>
+  </header>
+
+  <!-- Main Grid Area -->
+  <main class="app-main" role="main" id="main-content">
+    <div class="grid-container">
+      
+      <!-- COLUMN 1: Logging Forms -->
+      <section class="card panel-log" aria-labelledby="logging-heading">
+        <h2 id="logging-heading" class="section-title">Log Daily Activities</h2>
+        <p class="section-desc">Record your recent travel, meals, and utilities to calculate your footprint.</p>
+        
+        <!-- Tab Navigation for Activity Types -->
+        <div class="tab-list" role="tablist" aria-label="Activity Categories">
+          <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="transport-panel" id="tab-transport">
+            🚗 Transport
+          </button>
+          <button class="tab-btn" role="tab" aria-selected="false" aria-controls="meals-panel" id="tab-meals" tabindex="-1">
+            🍔 Meals
+          </button>
+          <button class="tab-btn" role="tab" aria-selected="false" aria-controls="energy-panel" id="tab-energy" tabindex="-1">
+            ⚡ Home Energy
+          </button>
+        </div>
+
+        <!-- Panel: Transport -->
+        <div class="tab-panel active" id="transport-panel" role="tabpanel" aria-labelledby="tab-transport">
+          <form id="form-transport" aria-label="Log Transport Activity">
+            <div class="form-group">
+              <label for="transport-mode">Transportation Mode</label>
+              <select id="transport-mode" name="mode" required aria-required="true">
+                <option value="petrol_car">Petrol Car (0.18 kg CO2/km)</option>
+                <option value="electric_car">Electric Car (0.05 kg CO2/km)</option>
+                <option value="public_transit">Public Transit (0.04 kg CO2/km)</option>
+                <option value="bike_walk">Bicycle / Walking (0.00 kg CO2/km)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="transport-distance">Distance Traveled (km)</label>
+              <input type="number" id="transport-distance" name="distance" min="0" step="0.1" placeholder="e.g. 15.5" required aria-required="true">
+            </div>
+            <button type="submit" class="btn btn-primary" aria-label="Log transportation activity">Log Journey</button>
+          </form>
+        </div>
+
+        <!-- Panel: Meals -->
+        <div class="tab-panel" id="meals-panel" role="tabpanel" aria-labelledby="tab-meals" hidden>
+          <form id="form-meals" aria-label="Log Meal Activity">
+            <div class="form-group">
+              <label for="meal-diet">Diet / Meal Type</label>
+              <select id="meal-diet" name="dietType" required aria-required="true">
+                <option value="beef_lamb">Beef / Lamb Meal (7.0 kg CO2)</option>
+                <option value="poultry_pork">Poultry / Pork Meal (2.5 kg CO2)</option>
+                <option value="vegetarian">Vegetarian Meal (1.0 kg CO2)</option>
+                <option value="vegan">Vegan Meal (0.5 kg CO2)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="meal-count">Number of Meals</label>
+              <input type="number" id="meal-count" name="count" min="1" step="1" value="1" required aria-required="true">
+            </div>
+            <button type="submit" class="btn btn-primary" aria-label="Log meal activity">Log Meal</button>
+          </form>
+        </div>
+
+        <!-- Panel: Energy -->
+        <div class="tab-panel" id="energy-panel" role="tabpanel" aria-labelledby="tab-energy" hidden>
+          <form id="form-energy" aria-label="Log Energy Activity">
+            <div class="form-group">
+              <label for="energy-electricity">Electricity Consumed (kWh)</label>
+              <input type="number" id="energy-electricity" name="electricityKwh" min="0" step="0.1" placeholder="e.g. 12.4" required aria-required="true">
+            </div>
+            <div class="form-group">
+              <label for="energy-gas">Natural Gas Consumed (kWh)</label>
+              <input type="number" id="energy-gas" name="gasKwh" min="0" step="0.1" placeholder="e.g. 8.2" required aria-required="true">
+            </div>
+            <button type="submit" class="btn btn-primary" aria-label="Log energy activity">Log Utilities</button>
+          </form>
+        </div>
+
+        <!-- Toast Feedback for Log Operations -->
+        <div id="log-feedback" class="toast-feedback" aria-live="polite" role="status"></div>
+      </section>
+
+      <!-- COLUMN 2: Summary Dashboard & Chat -->
+      <div class="column-right">
+        
+        <!-- Dashboard Summary Card -->
+        <section class="card panel-dashboard" aria-labelledby="dashboard-heading">
+          <div class="dashboard-header">
+            <h2 id="dashboard-heading" class="section-title">Emissions Summary</h2>
+            <button id="btn-reset" class="btn btn-danger btn-sm" aria-label="Reset logged emissions data">Reset Data</button>
+          </div>
+
+          <div class="total-co2-container" aria-live="polite">
+            <div class="total-co2-number" id="total-co2-display">0.0</div>
+            <div class="total-co2-unit">kg CO2e logged today</div>
+          </div>
+
+          <!-- Breakdown list -->
+          <div class="breakdown-list" aria-label="Emissions breakdown by category">
+            <!-- Transport Breakdown -->
+            <div class="breakdown-item">
+              <div class="breakdown-info">
+                <span class="breakdown-label">🚗 Transportation</span>
+                <span class="breakdown-val" id="val-transport">0.0 kg</span>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill fill-transport" id="bar-transport" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <!-- Meals Breakdown -->
+            <div class="breakdown-item">
+              <div class="breakdown-info">
+                <span class="breakdown-label">🍔 Dietary Impact</span>
+                <span class="breakdown-val" id="val-meals">0.0 kg</span>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill fill-meals" id="bar-meals" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <!-- Energy Breakdown -->
+            <div class="breakdown-item">
+              <div class="breakdown-info">
+                <span class="breakdown-label">⚡ Home Energy</span>
+                <span class="breakdown-val" id="val-energy">0.0 kg</span>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill fill-energy" id="bar-energy" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Gemini Smart Assistant Card -->
+        <section class="card panel-assistant" aria-labelledby="assistant-heading">
+          <div class="assistant-header">
+            <h2 id="assistant-heading" class="section-title">Smart Carbon Assistant</h2>
+            <span class="badge badge-ai" aria-label="Powered by Gemini 2.5 Flash">Gemini 2.5 Flash</span>
+          </div>
+          <p class="assistant-desc">Receive personalized, context-aware suggestions to decrease emissions.</p>
+
+          <!-- Chat messages area -->
+          <div class="chat-container" id="chat-messages" role="log" aria-live="polite" aria-label="Assistant conversation history">
+            <div class="chat-msg system">
+              <div class="msg-bubble">
+                Hello! I'm your Smart Carbon Assistant. Track your daily activities or ask me for personalized strategies to reduce emissions.
+              </div>
+            </div>
+          </div>
+
+          <!-- Chat Form -->
+          <form id="form-chat" class="chat-form" aria-label="Send message to assistant">
+            <input type="text" id="chat-input" placeholder="Ask for personalized reduction tips..." required aria-required="true" aria-label="Chat input message">
+            <button type="submit" id="chat-submit" class="btn btn-primary" aria-label="Send query">Send</button>
+          </form>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer" role="contentinfo">
+    <div class="footer-container">
+      <p>© 2026 EcoSphere. All Rights Reserved.</p>
+      <p class="accessibility-note">Designed to meet WCAG 2.1 AAA Accessibility guidelines.</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
