@@ -129,5 +129,105 @@ describe('AI Chatbot Assistant Endpoints', () => {
       // Fallback engine response contains text related to home energy tips since that's highest
       expect(res.body.response).toContain('home energy');
     });
+
+    test('should return 500 error if chatbot controller crashes', async () => {
+      jest.resetModules();
+      process.env.GEMINI_API_KEY = 'mock_test_key_secret';
+      jest.doMock('../src/controllers/carbonController', () => {
+        const actual = jest.requireActual('../src/controllers/carbonController');
+        return {
+          ...actual,
+          getRawActivities: () => {
+            throw new Error('Test database crash');
+          }
+        };
+      });
+
+
+      const inlineRequest = require('supertest');
+      const inlineServer = require('../server');
+
+      const res = await inlineRequest(inlineServer.app)
+        .post('/api/ai/chat')
+        .send({ message: 'Hello' });
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body).toHaveProperty('error', 'Failed to generate chat response: Test database crash');
+
+      inlineServer.server.close();
+    });
+
+
+    test('should test all paths in generateMockResponse via chat route fallbacks', async () => {
+      // Temporarily disable Live AI Client to force local mock engine
+      const geminiConfig = require('../src/config/gemini');
+      const originalAi = geminiConfig.ai;
+      geminiConfig.ai = null;
+
+      // Path A: Primary source is transport, asks to reduce
+      await request(app)
+        .post('/api/carbon/activities')
+        .send({ type: 'transport', details: { mode: 'petrol_car', distance: 100 } }); // 18 kg CO2e
+      
+      const resTransReduce = await request(app)
+        .post('/api/ai/chat')
+        .send({ message: 'reduce transport' });
+      expect(resTransReduce.body.response).toContain('transportation');
+
+      // Clear activities
+      await request(app).delete('/api/carbon/activities');
+
+      // Path B: Primary source is meals, asks to reduce
+      await request(app)
+        .post('/api/carbon/activities')
+        .send({ type: 'meal', details: { dietType: 'beef_lamb', count: 5 } }); // 35 kg CO2e
+      
+      const resMealReduce = await request(app)
+        .post('/api/ai/chat')
+        .send({ message: 'tips for food' });
+      expect(resMealReduce.body.response).toContain('dietary');
+
+      // Path C: Primary source is energy, general chat response
+      await request(app).delete('/api/carbon/activities');
+      await request(app)
+        .post('/api/carbon/activities')
+        .send({ type: 'energy', details: { electricityKwh: 100, gasKwh: 100 } }); // 65 kg CO2e
+
+      const resEnergyGeneral = await request(app)
+        .post('/api/ai/chat')
+        .send({ message: 'hello assistant' });
+      expect(resEnergyGeneral.body.response).toContain('home energy');
+
+      // Restore AI
+      geminiConfig.ai = originalAi;
+    });
+  });
+
+  describe('Gemini SDK Config Module', () => {
+    test('should warn if API key is missing', () => {
+      jest.resetModules();
+      const originalKey = process.env.GEMINI_API_KEY;
+      delete process.env.GEMINI_API_KEY;
+      delete process.env.GOOGLE_API_KEY;
+
+      const gemini = require('../src/config/gemini');
+      expect(gemini.ai).toBeNull();
+
+      process.env.GEMINI_API_KEY = originalKey;
+    });
+
+    test('should catch initialization error if GoogleGenAI constructor throws', () => {
+      jest.resetModules();
+      const { GoogleGenAI } = require('@google/genai');
+      const mockConstructor = jest.spyOn(require('@google/genai'), 'GoogleGenAI').mockImplementation(() => {
+        throw new Error('Constructor failed');
+      });
+
+      const gemini = require('../src/config/gemini');
+      expect(gemini.ai).toBeNull();
+
+      mockConstructor.mockRestore();
+    });
   });
 });
+

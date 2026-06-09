@@ -124,7 +124,80 @@ describe('Carbon Activities API Endpoints', () => {
 
       expect(res.statusCode).toBe(400);
     });
+
+    test('should return 400 if activity type is invalid', async () => {
+      const res = await request(app)
+        .post('/api/carbon/activities')
+        .send({ type: 'flight', details: {} });
+      expect(res.statusCode).toBe(400);
+      expect(res.body.error).toContain('Invalid activity type');
+    });
+
+    test('should return 400 if details is not an object', async () => {
+      const res = await request(app)
+        .post('/api/carbon/activities')
+        .send({ type: 'transport', details: 'my-journey' });
+      expect(res.statusCode).toBe(400);
+      expect(res.body.error).toContain('details object is required');
+    });
+
+    test('should return 400 if transport mode is missing', async () => {
+      const res = await request(app)
+        .post('/api/carbon/activities')
+        .send({ type: 'transport', details: { distance: 10 } });
+      expect(res.statusCode).toBe(400);
+      expect(res.body.error).toContain('mode is required');
+    });
+
+    test('should return 400 if transport mode is invalid', async () => {
+      const res = await request(app)
+        .post('/api/carbon/activities')
+        .send({ type: 'transport', details: { mode: 'rocket', distance: 10 } });
+      expect(res.statusCode).toBe(400);
+      expect(res.body.error).toContain('Invalid transport mode');
+    });
+
+    test('should return 400 if meal dietType is missing', async () => {
+      const res = await request(app)
+        .post('/api/carbon/activities')
+        .send({ type: 'meal', details: { count: 3 } });
+      expect(res.statusCode).toBe(400);
+      expect(res.body.error).toContain('dietType is required');
+    });
+
+    test('should return 400 if meal count is invalid', async () => {
+      const res = await request(app)
+        .post('/api/carbon/activities')
+        .send({ type: 'meal', details: { dietType: 'vegan', count: -2 } });
+      expect(res.statusCode).toBe(400);
+      expect(res.body.error).toContain('count must be a non-negative integer');
+    });
+
+    test('should return 400 if energy details are missing or incomplete', async () => {
+      const res = await request(app)
+        .post('/api/carbon/activities')
+        .send({ type: 'energy', details: { electricityKwh: 10 } });
+      expect(res.statusCode).toBe(400);
+      expect(res.body.error).toContain('Both electricityKwh and gasKwh are required');
+    });
+
+    test('should return 400 if energy electricityKwh is invalid', async () => {
+      const res = await request(app)
+        .post('/api/carbon/activities')
+        .send({ type: 'energy', details: { electricityKwh: -1, gasKwh: 10 } });
+      expect(res.statusCode).toBe(400);
+      expect(res.body.error).toContain('Electricity consumption must be a non-negative number');
+    });
+
+    test('should return 400 if energy gasKwh is invalid', async () => {
+      const res = await request(app)
+        .post('/api/carbon/activities')
+        .send({ type: 'energy', details: { electricityKwh: 10, gasKwh: 'invalid' } });
+      expect(res.statusCode).toBe(400);
+      expect(res.body.error).toContain('Gas consumption must be a non-negative number');
+    });
   });
+
 
   describe('GET /api/carbon/summary', () => {
     test('should retrieve empty summary initially', async () => {
@@ -170,4 +243,129 @@ describe('Carbon Activities API Endpoints', () => {
       expect(getRes.body.activities).toHaveLength(0);
     });
   });
+
+  describe('Global App Routing and Errors', () => {
+    test('should return 404 JSON for non-existent API routes starting with /api', async () => {
+      const res = await request(app).get('/api/invalid-endpoint-path');
+      expect(res.statusCode).toBe(404);
+      expect(res.body).toHaveProperty('error', 'Endpoint not found');
+    });
+
+    test('should serve index.html for non-existent non-API SPA routes', async () => {
+      const res = await request(app).get('/some-random-spa-page-route');
+      expect(res.statusCode).toBe(200);
+      expect(res.headers['content-type']).toContain('text/html');
+    });
+
+    test('should handle unhandled errors via global error handler', async () => {
+      jest.resetModules();
+      jest.doMock('../src/controllers/carbonController', () => {
+        const actual = jest.requireActual('../src/controllers/carbonController');
+        return {
+          ...actual,
+          getSummary: (req, res, next) => {
+            next(new Error('Test unhandled exception'));
+          }
+        };
+      });
+
+
+      const inlineRequest = require('supertest');
+      const inlineServer = require('../server');
+
+      const res = await inlineRequest(inlineServer.app).get('/api/carbon/summary');
+      expect(res.statusCode).toBe(500);
+      expect(res.body).toHaveProperty('error', 'An internal server error occurred');
+
+      inlineServer.server.close();
+    });
+
+    test('should return 500 error if getSummary controller encounters calculation crash', async () => {
+      jest.resetModules();
+      jest.doMock('../src/utils/calculations', () => {
+        const actual = jest.requireActual('../src/utils/calculations');
+        return {
+          ...actual,
+          getAggregatedSummary: () => {
+            throw new Error('Summary calculation crashed');
+          }
+        };
+      });
+
+      const inlineRequest = require('supertest');
+      const inlineServer = require('../server');
+
+      const res = await inlineRequest(inlineServer.app).get('/api/carbon/summary');
+      expect(res.statusCode).toBe(500);
+      expect(res.body).toHaveProperty('error', 'Failed to fetch summary: Summary calculation crashed');
+
+      inlineServer.server.close();
+    });
+
+    test('should return 500 error if addActivity controller encounters calculation crash', async () => {
+      jest.resetModules();
+      jest.doMock('../src/utils/calculations', () => {
+        const actual = jest.requireActual('../src/utils/calculations');
+        return {
+          ...actual,
+          calculateTransportEmission: () => {
+            throw new Error('Calculator crash');
+          }
+        };
+      });
+
+      const inlineRequest = require('supertest');
+      const inlineServer = require('../server');
+
+      const res = await inlineRequest(inlineServer.app)
+        .post('/api/carbon/activities')
+        .send({ type: 'transport', details: { mode: 'petrol_car', distance: 10 } });
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body).toHaveProperty('error', 'Failed to process activity: Calculator crash');
+
+      inlineServer.server.close();
+    });
+
+    test('should return 500 error if clearActivities controller encounters crash', async () => {
+      jest.resetModules();
+      jest.doMock('../src/utils/calculations', () => {
+        const actual = jest.requireActual('../src/utils/calculations');
+        return {
+          ...actual,
+          getAggregatedSummary: () => {
+            throw new Error('Clear summary failed');
+          }
+        };
+      });
+
+      const inlineRequest = require('supertest');
+      const inlineServer = require('../server');
+
+      const res = await inlineRequest(inlineServer.app).delete('/api/carbon/activities');
+      expect(res.statusCode).toBe(500);
+      expect(res.body).toHaveProperty('error', 'Failed to clear activities: Clear summary failed');
+
+      inlineServer.server.close();
+    });
+  });
+
+
+  describe('Input Sanitizer Utilities', () => {
+    const { sanitizeValue } = require('../src/middleware/security');
+
+    test('should return null or undefined as is', () => {
+      expect(sanitizeValue(null)).toBeNull();
+      expect(sanitizeValue(undefined)).toBeUndefined();
+    });
+
+    test('should prevent prototype pollution in sanitizeValue', () => {
+      const payload = JSON.parse('{"__proto__": {"polluted": true}, "normal": "text"}');
+      const sanitized = sanitizeValue(payload);
+      expect(sanitized.__proto__.polluted).toBeUndefined();
+      expect(sanitized.normal).toBe('text');
+    });
+  });
 });
+
+

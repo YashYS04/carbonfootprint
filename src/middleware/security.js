@@ -4,6 +4,8 @@
 
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const cors = require('cors');
+const express = require('express');
 
 /**
  * Sanitizes a single string to escape HTML entities and prevent XSS injection.
@@ -39,6 +41,9 @@ function sanitizeValue(val) {
   if (typeof val === 'object') {
     const cleanObj = {};
     for (const key of Object.keys(val)) {
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+        continue;
+      }
       cleanObj[key] = sanitizeValue(val[key]);
     }
     return cleanObj;
@@ -89,7 +94,7 @@ function setupSecurity(app) {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"], // unsafe-inline allowed for UI handlers
+        scriptSrc: ["'self'"], // unsafe-inline removed for strict CSP security
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         imgSrc: ["'self'", "data:"],
@@ -99,7 +104,6 @@ function setupSecurity(app) {
   }));
 
   // Enable CORS
-  const cors = require('cors');
   app.use(cors({
     origin: '*', // For Cloud Run, standard CORS config
     methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
@@ -107,7 +111,6 @@ function setupSecurity(app) {
   }));
 
   // JSON and URL-encoded parsers with body size limits to prevent large payload attacks
-  const express = require('express');
   app.use(express.json({ limit: '10kb' }));
   app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 

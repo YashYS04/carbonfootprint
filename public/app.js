@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error('Failed to load dashboard summary data.');
       
       const data = await res.json();
-      updateDashboardUI(data.summary);
+      updateDashboardUI(data.summary, data.activities);
     } catch (err) {
       showFeedback(err.message, 'error');
     }
@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error(data.error || 'Failed to record activity.');
 
       showFeedback('Activity successfully logged!', 'success');
-      updateDashboardUI(data.summary);
+      updateDashboardUI(data.summary, data.activities);
 
       // Trigger automatic AI assistant check-in reminder
       appendChatBubble('system', `Your activity was recorded! Emitted: **${data.activity.emissions} kg CO2e**. I've updated your dashboard summary. Ask me for suggestions based on this activity!`);
@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error(data.error || 'Failed to clear data.');
 
       showFeedback('Footprint tracker reset to zero.', 'success');
-      updateDashboardUI(data.summary);
+      updateDashboardUI(data.summary, data.activities);
       
       // Clear Chat log except first message
       chatMessages.innerHTML = `
@@ -222,8 +222,9 @@ document.addEventListener('DOMContentLoaded', () => {
   /**
    * Refreshes the numbers and progress bars in the dashboard cards.
    * @param {object} summary - Emissions aggregate object.
+   * @param {Array} activities - List of user-logged activities.
    */
-  function updateDashboardUI(summary) {
+  function updateDashboardUI(summary, activities = []) {
     if (!summary) return;
 
     totalCo2Display.textContent = summary.totalCo2.toFixed(1);
@@ -252,7 +253,61 @@ document.addEventListener('DOMContentLoaded', () => {
     barTransport.style.width = `${calcPercentage(summary.byCategory.transport)}%`;
     barMeals.style.width = `${calcPercentage(summary.byCategory.meal)}%`;
     barEnergy.style.width = `${calcPercentage(summary.byCategory.energy)}%`;
+
+    // Update Activity Log List UI
+    const activityLogList = document.getElementById('activity-log-list');
+    if (activityLogList) {
+      if (activities.length === 0) {
+        activityLogList.innerHTML = `<li class="empty-log">No activities logged yet today.</li>`;
+      } else {
+        activityLogList.innerHTML = activities.map(act => {
+          let icon = '📝';
+          let categoryLabel = act.type;
+          let detailsText = '';
+
+          if (act.type === 'transport') {
+            icon = '🚗';
+            categoryLabel = 'Transport';
+            const modeMap = {
+              petrol_car: 'Petrol Car',
+              electric_car: 'Electric Car',
+              public_transit: 'Public Transit',
+              bike_walk: 'Walk/Bike'
+            };
+            detailsText = `${modeMap[act.details.mode] || act.details.mode} (${act.details.distance} km)`;
+          } else if (act.type === 'meal') {
+            icon = '🍔';
+            categoryLabel = 'Meals';
+            const dietMap = {
+              beef_lamb: 'Beef/Lamb Meal',
+              poultry_pork: 'Poultry/Pork Meal',
+              vegetarian: 'Vegetarian Meal',
+              vegan: 'Vegan Meal'
+            };
+            detailsText = `${dietMap[act.details.dietType] || act.details.dietType} (${act.details.count})`;
+          } else if (act.type === 'energy') {
+            icon = '⚡';
+            categoryLabel = 'Home Energy';
+            detailsText = `Electricity: ${act.details.electricityKwh} kWh, Gas: ${act.details.gasKwh} kWh`;
+          }
+
+          return `
+            <li class="activity-log-item">
+              <div class="activity-item-left">
+                <span class="activity-icon" aria-hidden="true">${icon}</span>
+                <div class="activity-details">
+                  <span class="activity-category category-${act.type}">${categoryLabel}</span>
+                  <span class="activity-desc">${detailsText}</span>
+                </div>
+              </div>
+              <span class="activity-emissions">${act.emissions.toFixed(1)} kg</span>
+            </li>
+          `;
+        }).join('');
+      }
+    }
   }
+
 
   /**
    * Displays temporary confirmation/error messages to the user.

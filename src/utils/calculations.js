@@ -1,10 +1,8 @@
-/**
- * @fileoverview Utility functions for calculating carbon footprint metrics based on standardized environmental factors.
- * All factors represent kilograms of CO2 equivalent (kg CO2e) per unit.
- */
+const logger = require('./logger');
 
 /**
  * Standard emission factors.
+
  * @type {Readonly<{transport: {petrol_car: number, electric_car: number, public_transit: number, bike_walk: number}, meals: {vegan: number, vegetarian: number, poultry_pork: number, beef_lamb: number}, energy: {electricity: number, gas: number}}>}
  */
 const EMISSION_FACTORS = Object.freeze({
@@ -112,8 +110,9 @@ function calculateTotalEmission(activities) {
       }
     } catch (err) {
       // Log warning and ignore malformed items for calculation safety, or bubble up
-      console.warn(`Skipping calculation for invalid activity item: ${err.message}`);
+      logger.warn(`Skipping calculation for invalid activity item: ${err.message}`);
     }
+
   }
 
   return parseFloat(total.toFixed(3));

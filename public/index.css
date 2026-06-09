@@ -535,3 +535,102 @@ select:focus {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Recent Activity Log Section Styling */
+.activity-log-section {
+  margin-top: 2rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 1.5rem;
+}
+
+.activity-log-title {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.activity-log-scroll {
+  max-height: 200px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) #090e0c;
+}
+
+.activity-log-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.activity-log-item {
+  background-color: #090e0c;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: border-color 0.2s ease;
+}
+
+.activity-log-item:hover {
+  border-color: var(--primary-accent);
+}
+
+.activity-item-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.activity-icon {
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background-color: #141f1b;
+  border-radius: 50%;
+}
+
+.activity-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.activity-category {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.category-transport { color: var(--transport-color); }
+.category-meal { color: var(--meals-color); }
+.category-energy { color: var(--energy-color); }
+
+.activity-desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-top: 0.1rem;
+}
+
+.activity-emissions {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+}
+
+.empty-log {
+  color: var(--text-secondary);
+  font-style: italic;
+  font-size: 0.95rem;
+  text-align: center;
+  padding: 1.5rem;
+}
+

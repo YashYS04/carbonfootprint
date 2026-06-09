@@ -6,13 +6,13 @@ const {
   calculateTransportEmission,
   calculateMealEmission,
   calculateEnergyEmission,
-  calculateTotalEmission,
   getAggregatedSummary
 } = require('../utils/calculations');
+const logger = require('../utils/logger');
 
 // In-memory array acting as our database
 /** @type {Array<{id: string, type: 'transport'|'meal'|'energy', details: object, emissions: number, timestamp: string}>} */
-let activities = [];
+const activities = [];
 
 /**
  * Logs a new user activity and returns the calculated carbon footprint.
@@ -21,6 +21,7 @@ let activities = [];
  * @returns {void}
  */
 function addActivity(req, res) {
+
   try {
     const { type, details } = req.body;
     let emissions = 0;
@@ -50,11 +51,13 @@ function addActivity(req, res) {
     return res.status(201).json({
       message: 'Activity logged successfully',
       activity: newActivity,
+      activities,
       summary
     });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to process activity: ' + error.message });
   }
+
 }
 
 /**

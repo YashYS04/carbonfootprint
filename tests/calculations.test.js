@@ -96,5 +96,25 @@ describe('Carbon Emission Calculations Utility', () => {
     test('should return 0 for an empty activity array', () => {
       expect(calculateTotalEmission([])).toBe(0);
     });
+
+    test('should throw error for non-array activities input', () => {
+      expect(() => calculateTotalEmission('not-an-array')).toThrow('Activities must be an array');
+    });
+
+    test('should warn and continue if an activity item calculation fails', () => {
+      const activities = [
+        {
+          type: 'transport',
+          details: { mode: 'spaceship', distance: 10 } // Invalid transportation mode -> throws
+        },
+        {
+          type: 'meal',
+          details: { dietType: 'vegan', count: 2 } // 1.0 kg
+        }
+      ];
+
+      expect(calculateTotalEmission(activities)).toBe(1.0);
+    });
   });
 });
+

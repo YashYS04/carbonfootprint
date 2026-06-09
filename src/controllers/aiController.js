@@ -6,6 +6,7 @@ const { ai } = require('../config/gemini');
 const { aiCache } = require('../utils/cache');
 const { getRawActivities } = require('./carbonController');
 const { getAggregatedSummary } = require('../utils/calculations');
+const logger = require('../utils/logger');
 
 /**
  * Handles chatbot requests from users. Grounded on their actual carbon footprint history.
@@ -57,10 +58,11 @@ async function chat(req, res) {
           throw new Error('Empty response from Gemini');
         }
       } catch (geminiError) {
-        console.error('Gemini API Error, falling back to local reasoning:', geminiError.message);
+        logger.error('Gemini API Error, falling back to local reasoning:', geminiError.message);
         assistantResponse = generateMockResponse(message, summary);
       }
     } else {
+
       // Offline/test mock reasoning engine
       assistantResponse = generateMockResponse(message, summary);
     }
