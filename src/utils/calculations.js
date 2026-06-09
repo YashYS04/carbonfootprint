@@ -119,10 +119,42 @@ function calculateTotalEmission(activities) {
   return parseFloat(total.toFixed(3));
 }
 
+/**
+ * Helper to compute aggregated carbon statistics from a list of user activities.
+ * @param {Array<{type: string, emissions: number}>} activitiesList - Array of logged activities.
+ * @returns {{totalCo2: number, byCategory: {transport: number, meal: number, energy: number}, activityCount: number}} Aggregated carbon stats summary.
+ */
+function getAggregatedSummary(activitiesList) {
+  const summary = {
+    totalCo2: 0,
+    byCategory: {
+      transport: 0,
+      meal: 0,
+      energy: 0
+    },
+    activityCount: activitiesList.length
+  };
+
+  for (const activity of activitiesList) {
+    summary.totalCo2 += activity.emissions;
+    if (summary.byCategory[activity.type] !== undefined) {
+      summary.byCategory[activity.type] += activity.emissions;
+    }
+  }
+
+  summary.totalCo2 = parseFloat(summary.totalCo2.toFixed(3));
+  summary.byCategory.transport = parseFloat(summary.byCategory.transport.toFixed(3));
+  summary.byCategory.meal = parseFloat(summary.byCategory.meal.toFixed(3));
+  summary.byCategory.energy = parseFloat(summary.byCategory.energy.toFixed(3));
+
+  return summary;
+}
+
 module.exports = {
   EMISSION_FACTORS,
   calculateTransportEmission,
   calculateMealEmission,
   calculateEnergyEmission,
-  calculateTotalEmission
+  calculateTotalEmission,
+  getAggregatedSummary
 };

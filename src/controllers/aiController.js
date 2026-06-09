@@ -5,6 +5,7 @@
 const { ai } = require('../config/gemini');
 const { aiCache } = require('../utils/cache');
 const { getRawActivities } = require('./carbonController');
+const { getAggregatedSummary } = require('../utils/calculations');
 
 /**
  * Handles chatbot requests from users. Grounded on their actual carbon footprint history.
@@ -165,35 +166,6 @@ ${tips}
 
 Your largest emission contributor is **${primarySource}** (${summary.byCategory[primarySource === 'dietary' ? 'meal' : primarySource === 'home energy' ? 'energy' : 'transport']} kg CO2e). 
 Would you like some specific, actionable tips to reduce emissions from this category? Just ask me for "reduction tips"!`;
-}
-
-/**
- * Helper to calculate summary for prompt building.
- * @private
- */
-function getAggregatedSummary(activitiesList) {
-  const summary = {
-    totalCo2: 0,
-    byCategory: {
-      transport: 0,
-      meal: 0,
-      energy: 0
-    }
-  };
-
-  for (const activity of activitiesList) {
-    summary.totalCo2 += activity.emissions;
-    if (summary.byCategory[activity.type] !== undefined) {
-      summary.byCategory[activity.type] += activity.emissions;
-    }
-  }
-
-  summary.totalCo2 = parseFloat(summary.totalCo2.toFixed(3));
-  summary.byCategory.transport = parseFloat(summary.byCategory.transport.toFixed(3));
-  summary.byCategory.meal = parseFloat(summary.byCategory.meal.toFixed(3));
-  summary.byCategory.energy = parseFloat(summary.byCategory.energy.toFixed(3));
-
-  return summary;
 }
 
 module.exports = {

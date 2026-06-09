@@ -6,7 +6,8 @@ const {
   calculateTransportEmission,
   calculateMealEmission,
   calculateEnergyEmission,
-  calculateTotalEmission
+  calculateTotalEmission,
+  getAggregatedSummary
 } = require('../utils/calculations');
 
 // In-memory array acting as our database
@@ -44,7 +45,7 @@ function addActivity(req, res) {
     activities.push(newActivity);
 
     // Calculate updated aggregates
-    const summary = getAggregatedSummary();
+    const summary = getAggregatedSummary(activities);
 
     return res.status(201).json({
       message: 'Activity logged successfully',
@@ -64,7 +65,7 @@ function addActivity(req, res) {
  */
 function getSummary(req, res) {
   try {
-    const summary = getAggregatedSummary();
+    const summary = getAggregatedSummary(activities);
     return res.status(200).json({
       activities,
       summary
@@ -86,44 +87,14 @@ function clearActivities(req, res) {
     return res.status(200).json({
       message: 'Activity history cleared successfully',
       activities: [],
-      summary: getAggregatedSummary()
+      summary: getAggregatedSummary(activities)
     });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to clear activities: ' + error.message });
   }
 }
 
-/**
- * Helper to compute aggregated carbon statistics from in-memory logs.
- * @private
- * @returns {{totalCo2: number, byCategory: {transport: number, meal: number, energy: number}, activityCount: number}}
- */
-function getAggregatedSummary() {
-  const summary = {
-    totalCo2: 0,
-    byCategory: {
-      transport: 0,
-      meal: 0,
-      energy: 0
-    },
-    activityCount: activities.length
-  };
 
-  for (const activity of activities) {
-    summary.totalCo2 += activity.emissions;
-    if (summary.byCategory[activity.type] !== undefined) {
-      summary.byCategory[activity.type] += activity.emissions;
-    }
-  }
-
-  // Formatting decimal values
-  summary.totalCo2 = parseFloat(summary.totalCo2.toFixed(3));
-  summary.byCategory.transport = parseFloat(summary.byCategory.transport.toFixed(3));
-  summary.byCategory.meal = parseFloat(summary.byCategory.meal.toFixed(3));
-  summary.byCategory.energy = parseFloat(summary.byCategory.energy.toFixed(3));
-
-  return summary;
-}
 
 /**
  * Expose raw activities list (primarily for tests/internal use).
