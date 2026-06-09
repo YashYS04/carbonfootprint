@@ -282,6 +282,7 @@ describe('Carbon Activities API Endpoints', () => {
 
     test('should return 500 error if getSummary controller encounters calculation crash', async () => {
       jest.resetModules();
+      jest.unmock('../src/controllers/carbonController');
       jest.doMock('../src/utils/calculations', () => {
         const actual = jest.requireActual('../src/utils/calculations');
         return {
@@ -304,6 +305,7 @@ describe('Carbon Activities API Endpoints', () => {
 
     test('should return 500 error if addActivity controller encounters calculation crash', async () => {
       jest.resetModules();
+      jest.unmock('../src/controllers/carbonController');
       jest.doMock('../src/utils/calculations', () => {
         const actual = jest.requireActual('../src/utils/calculations');
         return {
@@ -329,6 +331,7 @@ describe('Carbon Activities API Endpoints', () => {
 
     test('should return 500 error if clearActivities controller encounters crash', async () => {
       jest.resetModules();
+      jest.unmock('../src/controllers/carbonController');
       jest.doMock('../src/utils/calculations', () => {
         const actual = jest.requireActual('../src/utils/calculations');
         return {
