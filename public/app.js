@@ -239,6 +239,11 @@ document.addEventListener('DOMContentLoaded', () => {
       maxCategoryEmission
     );
 
+    /**
+     * Helper to compute progress bar percentage values relative to the maximum category emission.
+     * @param {number} val - The emissions value for a specific category.
+     * @returns {number} Percentage value (0 - 100).
+     */
     const calcPercentage = (val) => {
       if (val === 0) return 0;
       return (val / currentMax) * 100;

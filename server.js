@@ -25,7 +25,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/carbon', carbonRoutes);
 app.use('/api/ai', aiRoutes);
 
-// Fallback for SPA Routing: serve index.html for unknown routes
+/**
+ * Fallback route handler for SPA routing. Serves the primary index page for frontend views,
+ * or returns a 404 JSON response if the request starts with the API prefix.
+ * @param {import('express').Request} req - Express request object.
+ * @param {import('express').Response} res - Express response object.
+ * @param {import('express').NextFunction} next - Express next function.
+ */
 app.get('*', (req, res, next) => {
   // Check if it's an API route that should return a 404 rather than the index page
   if (req.url.startsWith('/api')) {
@@ -34,7 +40,13 @@ app.get('*', (req, res, next) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Global Error Handler Middleware
+/**
+ * Global Express error handling middleware.
+ * @param {Error} err - Unhandled error object.
+ * @param {import('express').Request} req - Express request object.
+ * @param {import('express').Response} res - Express response object.
+ * @param {import('express').NextFunction} next - Express next function.
+ */
 app.use((err, req, res, next) => {
   console.error('Unhandled Server Error:', err.stack);
   res.status(500).json({
